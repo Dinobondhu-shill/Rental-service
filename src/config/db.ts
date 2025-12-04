@@ -16,6 +16,8 @@ const initDB = async() =>{
         )
         `)
 
+        
+
         console.log("connected")
 }
 

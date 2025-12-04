@@ -17,6 +17,17 @@ const getUser = async () =>{
         return result;
 }
 
+const updateUser = async (id : string, payload: Record<string, unknown>) =>{
+
+    const {name, email, phone, password} = payload
+
+    const result = await pool.query(`
+       UPDATE users SET name= $1, email=$2, phone=$3, password=$4 WHERE id = $5 RETURNING * 
+        `, [name, email, phone, password, id])
+        return result;
+
+}
+
 const deleteUser = async(id : string) =>{
    const result =  await pool.query(`DELETE FROM users WHERE id = $1`, [id]); 
 
@@ -27,5 +38,6 @@ const deleteUser = async(id : string) =>{
 export const userService = {
     createUser,
     getUser,
+    updateUser,
     deleteUser
 }
