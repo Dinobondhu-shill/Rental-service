@@ -8,16 +8,27 @@ const getUser = async () =>{
         return result;
 }
 
-const updateUser = async (id : string, payload: Record<string, unknown>) =>{
+const updateUser = async (id: string, payload: Record<string, unknown>) => {
+  const { name, email, phone, role } = payload;
 
-    const {name, email, phone, password} = payload
+  const emailLower = email ? (email as string).toLowerCase() : null;
 
-    const result = await pool.query(`
-       UPDATE users SET name= $1, email=$2, phone=$3, password=$4 WHERE id = $5 RETURNING * 
-        `, [name, email, phone, password, id])
-        return result;
+  const result = await pool.query(
+    `
+      UPDATE users SET 
+        name  = COALESCE($1, name),
+        email = COALESCE($2, email),
+        phone = COALESCE($3, phone),
+        role  = COALESCE($4, role)
+      WHERE id = $5 
+      RETURNING id, name, email, phone, role;
+    `,
+    [name, emailLower, phone, role, id]
+  );
 
-}
+  return result.rows[0];
+};
+
 
 const deleteUser = async(id : string) =>{
    const result =  await pool.query(`DELETE FROM users WHERE id = $1`, [id]); 
