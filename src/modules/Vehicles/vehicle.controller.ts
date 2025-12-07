@@ -5,9 +5,9 @@ import { vehiclesService } from "./vehicle.service";
 const createVehicle = async (req: Request, res: Response) => {
   try {
     const result = await vehiclesService.createVehicle(req.body) ;
-    res.status(200).json({
+    res.status(201).json({
       success: true,
-      message: "Vehicles Created Successfully",
+      message: "Vehicle Created Successfully",
       data: result.rows,
     });
   } catch (error: any) {
@@ -31,7 +31,7 @@ const getVehicles = async (req: Request, res: Response) => {
     }
     res.status(200).json({
       success: true,
-      message: "Vehicles data fetched",
+      message: "Vehicles retrieved successfully",
       data: result.rows,
     });
   } catch (error: any) {
@@ -97,7 +97,6 @@ const deleteVehicle = async (req: Request, res: Response) => {
 
     const result = await vehiclesService.deleteVehicle(id!);
 
-    // If user not found
     if (result.rowCount === 0) {
       return res.status(404).json({
         success: false,
@@ -105,11 +104,9 @@ const deleteVehicle = async (req: Request, res: Response) => {
       });
     }
 
-    // Deleted successfully
     return res.status(200).json({
       success: true,
       message: "Vehicle deleted successfully",
-      data: result.rows,
     });
   } catch (error: any) {
     return res.status(500).json({
