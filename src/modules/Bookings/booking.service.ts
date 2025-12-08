@@ -1,4 +1,7 @@
 import { pool } from "../../config/db";
+import { vehiclesService } from "../Vehicles/vehicle.service";
+
+const role = 'admin'
 
 const createBooking = async (payload: Record<string, unknown>) => {
   const {
@@ -22,30 +25,48 @@ const createBooking = async (payload: Record<string, unknown>) => {
   if (getVehicleData.rowCount === 0) {
   throw new Error("Vehicle not found");
 }
-  if (getVehicleData.rows[0].status !== "available") {
+
+  if (getVehicleData.rows[0].availability_status !== "available") {
   throw new Error("Vehicle is already booked, please choose another vehicle!");
 }
 
-  const { daily_rent_price, vehicle_name } = getVehicleData.rows[0];
+  const { daily_rent_price, vehicle_name }  = getVehicleData.rows[0];
+  const vehicle = {
+    daily_rent_price, vehicle_name
+  }
 
   const total_price = diffDays * daily_rent_price;
 
   const result = await pool.query(
     `
         INSERT INTO bookings(
-        customer_id, vehicle_id, rent_start_date, rent_end_date, total_price, status) VALUES($1, $2,$3, $4, $5) RETURNING *
+        customer_id, vehicle_id, rent_start_date, rent_end_date, total_price, status) VALUES($1, $2,$3, $4, $5, $6) RETURNING *
         `,
-    [customer_id, vehicle_id, rent_start_date, rent_end_date, total_price]
+    [customer_id, vehicle_id, rent_start_date, rent_end_date, total_price, 'active']
   );
-  return { ...result.rows, vehicle: { vehicle_name, daily_rent_price } };
+
+    if(result.rowCount !==0){
+      const updateVehicle = await vehiclesService.updateVehicle(vehicle_id, {availability_status : 'booked'})
+    }
+    const bookingData = {...result.rows[0], vehicle}
+  return bookingData;
 };
 
 const getBookings = async () => {
-  const result = await pool.query(`
-       SELECT * FROM bookings 
-        `);
 
-  return result;
+  if(role === 'admin'){
+     const bookingData = await pool.query(`
+       SELECT id, name, email FROM users JOIN bookings ON users.id = bookings.customer_id;
+        `);
+        return bookingData
+  }
+
+ 
+  // const customerData = await pool.query(`
+  //  SELECT name, email FROM users WHERE id = $1 
+  //   `, [])
+
+  return null;
 };
 
 export const bookingService = {

@@ -1,5 +1,7 @@
 import bcrypt from "bcrypt";
 import { pool } from "../../config/db";
+import jwt from "jsonwebtoken"
+import config from "../../config";
 
 const createUser = async (payload: Record<string, unknown>) => {
 
@@ -24,8 +26,34 @@ const createUser = async (payload: Record<string, unknown>) => {
 
     return result; 
   } 
+
+  const signInUser = async(email: string, password: string) => {
+    const lowerCasedEmail = email.toLowerCase();
+    const result = await pool.query(`
+      SELECT * FROM users WHERE email = $1
+      `, [lowerCasedEmail])
+
+      if(result.rowCount === 0){
+        throw new Error ("Email doesn't exists")
+      }
+
+      const user = result.rows[0]
+      console.log(user)
+
+      const isMatch = await bcrypt.compare(password, result.rows[0]?.password)
+      if(!isMatch){
+         throw new Error ("Invalid Password")
+      }
+      
+      const token = jwt.sign({name: user.name, email: user.email, role:user.role}, config.jwt_secret!, {expiresIn: "7d"})
+    
+        return {token,user}
+  }
+
+
   
 
 export const authService = {
   createUser,
+  signInUser
 };

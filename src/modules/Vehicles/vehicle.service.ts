@@ -26,7 +26,7 @@ const getVehiclesById = async(id:string) =>{
         return result
 }
 
-const updateVehicle = async (id: string, payload: Record<string, unknown>) =>{
+const updateVehicle = async (id: string, payload: any) =>{
     console.log(payload)
      const {vehicle_name, type, registration_number, daily_rent_price, availability_status} = payload;
 
