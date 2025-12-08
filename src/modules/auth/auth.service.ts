@@ -38,7 +38,6 @@ const createUser = async (payload: Record<string, unknown>) => {
       }
 
       const user = result.rows[0]
-      console.log(user)
 
       const isMatch = await bcrypt.compare(password, result.rows[0]?.password)
       if(!isMatch){
