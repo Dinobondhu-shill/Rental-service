@@ -85,15 +85,17 @@ const updateBooking = async (id: string, payload: any) => {
     `,
     [id]
   );
-  console.log(bookingData.rows[0], user);
 
   if (bookingData.rowCount === 0) {
     throw new Error("Booking not found");
   }
 
+  
+  const {customer_id, vehicle_id} = bookingData.rows[0];
+  
   switch (user.role) {
     case "customer":
-      if (user.id === bookingData.rows[0].customer_id) {
+      if (user.id === customer_id) {
         const result = await pool.query(
           `
             UPDATE bookings SET status = $1
@@ -101,8 +103,9 @@ const updateBooking = async (id: string, payload: any) => {
       RETURNING * `,
           [status, id]
         );
-
-        console.log(result.rows[0]);
+         await vehiclesService.updateVehicle(vehicle_id, {
+      availability_status: "available",
+    });
 
         if (result.rowCount === 0) {
           throw new Error("Booking not found");
@@ -111,7 +114,23 @@ const updateBooking = async (id: string, payload: any) => {
       } else {
         throw new Error("You are not allowed to edit data");
       }
-    
+    case "admin":
+      const result = await pool.query(
+        `
+          UPDATE bookings SET status = $1
+    WHERE id = $2
+    RETURNING * `,
+        [status, id]
+      );
+
+      if (result.rowCount === 0) {
+        throw new Error("Booking not found");
+      } else {
+         await vehiclesService.updateVehicle(vehicle_id, {
+      availability_status: "available",
+    });
+        return result.rows[0];
+      }
   }
 };
 
