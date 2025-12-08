@@ -8,7 +8,7 @@ const customer = 'customer'
 const router = Router()
 
 router.post('/',verifyToken(admin, customer), bookingController.createBooking);
-router.get('/', bookingController.getBookings)
+router.get('/',verifyToken(admin, customer), bookingController.getBookings)
 router.put('/:bookingId' ,verifyToken(admin, customer), bookingController.updateBooking)
 
 export const bookingRoutes = router;

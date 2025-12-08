@@ -24,18 +24,18 @@ const createBooking = async (req: Request, res: Response)=>{
 const getBookings = async (req: Request, res: Response)=>{
     
  try {
-    const result = await bookingService.getBookings() ;
+    const result = await bookingService.getBookings(req.user) ;
     console.log(result)
     if (result?.rowCount === 0) {
-      res.status(201).json({
+      res.status(200).json({
       success: true,
       message: "No bookings found",
     });
 }
-    res.status(201).json({
+    res.status(200).json({
       success: true,
       message: "Bookings retrieve successfully",
-      data: result?.rows[0],
+      data: result?.rows,
     });
   } catch (error: any) {
     res.status(404).json({

@@ -1,8 +1,6 @@
 import { pool } from "../../config/db";
 import { vehiclesService } from "../Vehicles/vehicle.service";
 
-const role = "admin";
-
 const createBooking = async (payload: Record<string, unknown>) => {
   const { customer_id, vehicle_id, rent_start_date, rent_end_date }: any =
     payload;
@@ -60,19 +58,38 @@ const createBooking = async (payload: Record<string, unknown>) => {
   return bookingData;
 };
 
-const getBookings = async () => {
+const getBookings = async (payload: any) => {
+  const { role } = payload;
+
+  console.log("payload in booking service", payload);
+
   if (role === "admin") {
     const bookingData = await pool.query(`
-       SELECT id, name, email FROM users JOIN bookings ON users.id = bookings.customer_id;
+     SELECT 
+  b.id, b.customer_id, b.vehicle_id, b.rent_start_date, b.rent_end_date,
+  b.total_price, b.status,
+  json_build_object('name', u.name, 'email', u.email) AS customer,
+  json_build_object('vehicle_name', v.vehicle_name, 'registration_number', v.registration_number) AS vehicle
+  FROM bookings b
+  JOIN users u ON b.customer_id = u.id
+  JOIN vehicles v ON b.vehicle_id = v.id
+  ORDER BY b.id DESC;
         `);
     return bookingData;
+  } else if (role === "customer") {
+    const bookingData = await pool.query(
+      `SELECT 
+      b.id, b.customer_id, b.vehicle_id, b.rent_start_date, b.rent_end_date,
+      b.total_price, b.status,
+      json_build_object('vehicle_name', v.vehicle_name, 'registration_number', v.registration_number) AS vehicle
+    FROM bookings b
+    JOIN vehicles v ON b.vehicle_id = v.id
+    WHERE b.customer_id = $1`,
+      [payload.id]
+    );
+    return bookingData;
   }
-
-  // const customerData = await pool.query(`
-  //  SELECT name, email FROM users WHERE id = $1
-  //   `, [])
-
-  return null;
+  throw new Error("You are not authorized to view bookings");
 };
 
 const updateBooking = async (id: string, payload: any) => {
@@ -90,9 +107,8 @@ const updateBooking = async (id: string, payload: any) => {
     throw new Error("Booking not found");
   }
 
-  
-  const {customer_id, vehicle_id} = bookingData.rows[0];
-  
+  const { customer_id, vehicle_id } = bookingData.rows[0];
+
   switch (user.role) {
     case "customer":
       if (user.id === customer_id) {
@@ -103,9 +119,9 @@ const updateBooking = async (id: string, payload: any) => {
       RETURNING * `,
           [status, id]
         );
-         await vehiclesService.updateVehicle(vehicle_id, {
-      availability_status: "available",
-    });
+        await vehiclesService.updateVehicle(vehicle_id, {
+          availability_status: "available",
+        });
 
         if (result.rowCount === 0) {
           throw new Error("Booking not found");
@@ -126,10 +142,16 @@ const updateBooking = async (id: string, payload: any) => {
       if (result.rowCount === 0) {
         throw new Error("Booking not found");
       } else {
-         await vehiclesService.updateVehicle(vehicle_id, {
-      availability_status: "available",
-    });
-        return result.rows[0];
+        const vehicleData = await vehiclesService.updateVehicle(vehicle_id, {
+          availability_status: "available",
+        });
+
+        const { availability_status } = vehicleData.rows[0];
+
+        const vehicle = { availability_status };
+
+        const bookingData = { ...result.rows[0], vehicle };
+        return bookingData;
       }
   }
 };
