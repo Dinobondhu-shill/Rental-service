@@ -5,9 +5,10 @@ import { verifyToken } from "../../middleware/auth.middleware";
 
 const router = Router();
 const admin = 'admin';
+const customer = 'customer';
 
 router.get('/',verifyToken(admin), userController.getUser)
-router.put('/:userId', userController.updateUser) 
+router.put('/:userId',verifyToken(admin, customer), userController.updateUser) 
 router.delete('/:userId', verifyToken(admin), userController.deleteUser)
 
 
