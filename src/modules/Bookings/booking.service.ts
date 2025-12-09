@@ -96,6 +96,12 @@ const updateBooking = async (id: string, payload: any) => {
   const user = payload.user;
   const { status } = payload.body;
 
+  const validStatuses = ["cancelled", "returned"];
+
+  if (!validStatuses.includes(status)) {
+  throw new Error("Invalid status value");
+}
+
   const bookingData = await pool.query(
     `
     SELECT * FROM bookings WHERE id = $1
@@ -112,6 +118,14 @@ const updateBooking = async (id: string, payload: any) => {
   switch (user.role) {
     case "customer":
       if (user.id === customer_id) {
+        if(status !== "cancelled"){
+          throw new Error("Customers can only cancel their bookings");
+        }
+    
+        if(bookingData.rows[0].rent_start_date <= new Date()){ 
+          throw new Error("You can not update booking after rent start date");
+        }
+
         const result = await pool.query(
           `
             UPDATE bookings SET status = $1
